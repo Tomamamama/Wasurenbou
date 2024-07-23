@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Articles</title>
+</head>
+<body>
+    <h1>Articles</h1>
+    <ul>
+        {% for article in articles %}
+            <li>
+                <h3>{{ article.title }}</h3>
+                <p>{{ article.content }}</p>
+                <a href="{{ url_for('edit_article', id=article.id) }}">Edit</a>
+                <form action="{{ url_for('delete_article', id=article.id) }}" method="POST" style="display:inline;">
+                    <button type="submit">Delete</button>
+                </form>
+                <a href="{{ url_for('bluetooth_info', article_id=article.id) }}">Bluetooth Info</a> <!-- 新しいリンク -->
+            </li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('add_article') }}">Add Article</a>
+</body>
+</html>
