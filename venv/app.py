@@ -7,8 +7,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 
 # Supabaseの初期化
-supabase_url = "https://hirysqpbuvnxhcitwcjv.supabase.co"  # 確認したURL
-supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpcnlzcXBidXZueGhjaXR3Y2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjI0Nzg5NjMsImV4cCI6MjAzODA1NDk2M30.D3rz5reEmBCwPa0dgXX4zC5zM0Cn8WLsFhBQj1TWPTU"  # 確認した公開キー
+supabase_url = "https://nnomgnwlsgnundohnpdm.supabase.co"  # 確認したURL
+supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ub21nbndsc2dudW5kb2hucGRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjI1MjU3NDUsImV4cCI6MjAzODEwMTc0NX0.Ss_GMgsz-MLGFuMEQBLSnfHi4wWlgeAjoRqWfeX8CdQ"  # 確認した公開キー
 supabase: Client = create_client(supabase_url, supabase_key)
 
 # Bluetooth信号強度の計算
