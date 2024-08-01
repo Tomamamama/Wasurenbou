@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth Device List</title>
+</head>
+<body>
+    <h1>Bluetooth Device List</h1>
+    <div id="device-list"></div>
+
+    <script>
+        async function fetchDevices() {
+            const response = await fetch('/devices');
+            const devices = await response.json();
+            const deviceList = document.getElementById('device-list');
+            deviceList.innerHTML = '<ul>' + devices.map(device => `<li>${device.user_name}: ${device.mac_address}</li>`).join('') + '</ul>';
+        }
+
+        window.onload = fetchDevices;
+    </script>
+</body>
+</html>

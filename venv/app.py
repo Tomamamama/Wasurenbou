@@ -1,41 +1,21 @@
-from flask import Flask, jsonify, render_template, redirect, url_for, request, flash
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, jsonify, request, render_template, redirect, url_for
 import asyncio
 from bleak import BleakScanner
+from supabase import create_client, Client
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
-db = SQLAlchemy(app)
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
+# Supabaseの初期化
+supabase_url = "https://hirysqpbuvnxhcitwcjv.supabase.co"  # 確認したURL
+supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpcnlzcXBidXZueGhjaXR3Y2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjI0Nzg5NjMsImV4cCI6MjAzODA1NDk2M30.D3rz5reEmBCwPa0dgXX4zC5zM0Cn8WLsFhBQj1TWPTU"  # 確認した公開キー
+supabase: Client = create_client(supabase_url, supabase_key)
 
-class Article(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-class Bluetooth(db.Model):
-    id #プライマリーキー
-    user_name
-    mac_address
-
-# TODO: 1.ログイン、アーティクル関連を全て削除
-#       2.supabaseとの接続を行う(上記のBluetoothのテーブル参照)
-#       3.クライアントのルート、バックエンドのルートをそれぞれ二つにする
-#       4.バックの中に書く処理は、bluetoothでの探索と探索に成功した場合にそのユーザー名とMACアドレスをDBへ書き込む(一つ目のルーティング)
-#       5.もう一つのルーティングでユーザー名とアドレスの組合せ一覧を返す
-#       6.それぞれのバックに対応するフロントを作成
-
-
-# Bluetooth Signal Strength Detection
+# Bluetooth信号強度の計算
 def calculate_distance(rssi, A=-50, n=2):
     return 10 ** ((A - rssi) / (10 * n))
 
+# Bluetooth信号強度の取得
 async def get_bluetooth_signal_strength(target_device):
     devices = await BleakScanner.discover()
     device_signal_data = {}
@@ -58,63 +38,45 @@ async def get_bluetooth_signal_strength(target_device):
 def fetch_signal_strengths(target_device):
     return asyncio.run(get_bluetooth_signal_strength(target_device))
 
-@app.route('/bluetooth', methods=['GET'])
-@login_required
-def bluetooth_info():
-    article_id = request.args.get('article_id')
-    device_address = None
-    if article_id:
-        article = Article.query.get_or_404(article_id)
-        device_address = article.content
-    return render_template('bluetooth.html', device_address=device_address)
+# エラーハンドラーの追加
+@app.errorhandler(Exception)
+def handle_exception(e):
+    response = {
+        "type": type(e).__name__,
+        "message": str(e),
+    }
+    return jsonify(response), 500
 
-@app.route('/bluetooth_data', methods=['GET'])
-@login_required
+# Bluetooth情報の取得ルート
+@app.route('/bluetooth', methods=['GET'])
+def bluetooth_info():
+    return render_template('bluetooth.html')
+
+# Bluetoothデータの取得ルート
+@app.route('/bluetooth_data', methods=['POST'])
 def bluetooth_data():
-    device_address = request.args.get('device_address')
+    data = request.json
+    device_address = data.get('mac_address')
     signal_strengths = fetch_signal_strengths(device_address)
+    
+    # Supabaseにデバイス情報を保存
+    db_data = {
+        "user_name": data.get('user_name'),  # クライアントからユーザー名を取得
+        "mac_address": device_address
+    }
+    response = supabase.table("Bluetooth").insert(db_data).execute()
+
     return jsonify(signal_strengths)
 
-@app.route('/articles')
-@login_required
-def articles():
-    articles = Article.query.filter_by(user_id=current_user.id).all()
-    return render_template('articles.html', articles=articles)
-
-@app.route('/add_article', methods=['GET', 'POST'])
-@login_required
-def add_article():
-    if request.method == 'POST':
-        title = request.form.get('title')
-        content = request.form.get('content')
-        article = Article(title=title, content=content, user_id=current_user.id)
-        db.session.add(article)
-        db.session.commit()
-        return redirect(url_for('articles'))
-    return render_template('edit_article.html', article=None)
-
-@app.route('/edit_article/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_article(id):
-    article = Article.query.get_or_404(id)
-    if request.method == 'POST':
-        article.title = request.form.get('title')
-        article.content = request.form.get('content')
-        db.session.commit()
-        return redirect(url_for('articles'))
-    return render_template('edit_article.html', article=article)
-
-@app.route('/delete_article/<int:id>', methods=['POST'])
-@login_required
-def delete_article(id):
-    article = Article.query.get_or_404(id)
-    db.session.delete(article)
-    db.session.commit()
-    return redirect(url_for('articles'))
+# Bluetoothデバイスリストの取得ルート
+@app.route('/devices', methods=['GET'])
+def devices():
+    devices = supabase.table("Bluetooth").select("*").execute()
+    return jsonify(devices.data)
 
 @app.route('/')
 def root():
-    return redirect(url_for('signup'))
+    return redirect(url_for('bluetooth_info'))
 
 if __name__ == '__main__':
     app.run(debug=True)

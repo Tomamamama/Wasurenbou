@@ -1,11 +1,50 @@
-{% extends "base.html" %}
-{% block content %}
-<h1>新規登録</h1>
-<form method="POST">
-    <label for="title">タイトル</label>
-    <input type="text" name="title">
-    <label for="body">内容</label>
-    <input type="text" name="body">
-    <input type="submit" value="新規登録">
-</form>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth Device Explorer</title>
+</head>
+<body>
+    <h1>Bluetooth Device Explorer</h1>
+    <form id="bluetooth-form">
+        <label for="user_name">Enter User Name:</label>
+        <input type="text" id="user_name" name="user_name" required>
+        <br>
+        <label for="mac_address">Enter MAC Address:</label>
+        <input type="text" id="mac_address" name="mac_address" required>
+        <br>
+        <button type="submit">Discover Device</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('bluetooth-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const userName = document.getElementById('user_name').value;
+            const macAddress = document.getElementById('mac_address').value;
+
+            try {
+                const response = await fetch('/bluetooth_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_name: userName, mac_address: macAddress })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    document.getElementById('result').innerText = `Error: ${error.type} - ${error.message}`;
+                    return;
+                }
+
+                const result = await response.json();
+                document.getElementById('result').innerText = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('result').innerText = `Error: ${error}`;
+            }
+        });
+    </script>
+</body>
+</html>
