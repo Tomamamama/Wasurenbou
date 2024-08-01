@@ -38,15 +38,6 @@ async def get_bluetooth_signal_strength(target_device):
 def fetch_signal_strengths(target_device):
     return asyncio.run(get_bluetooth_signal_strength(target_device))
 
-# エラーハンドラーの追加
-@app.errorhandler(Exception)
-def handle_exception(e):
-    response = {
-        "type": type(e).__name__,
-        "message": str(e),
-    }
-    return jsonify(response), 500
-
 # Bluetooth情報の取得ルート
 @app.route('/bluetooth', methods=['GET'])
 def bluetooth_info():
