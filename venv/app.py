@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import asyncio
 from bleak import BleakScanner
 
@@ -8,8 +7,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
 db = SQLAlchemy(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -22,39 +19,18 @@ class Article(db.Model):
     content = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+class Bluetooth(db.Model):
+    id #プライマリーキー
+    user_name
+    mac_address
 
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User(username=username, password=password)
-        db.session.add(user)
-        db.session.commit()
-        return redirect(url_for('login'))
-    return render_template('signup.html')
+# TODO: 1.ログイン、アーティクル関連を全て削除
+#       2.supabaseとの接続を行う(上記のBluetoothのテーブル参照)
+#       3.クライアントのルート、バックエンドのルートをそれぞれ二つにする
+#       4.バックの中に書く処理は、bluetoothでの探索と探索に成功した場合にそのユーザー名とMACアドレスをDBへ書き込む(一つ目のルーティング)
+#       5.もう一つのルーティングでユーザー名とアドレスの組合せ一覧を返す
+#       6.それぞれのバックに対応するフロントを作成
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username, password=password).first()
-        if user:
-            login_user(user)
-            return redirect(url_for('articles'))
-        else:
-            flash('Login Unsuccessful. Please check username and password', 'danger')
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
 
 # Bluetooth Signal Strength Detection
 def calculate_distance(rssi, A=-50, n=2):
@@ -91,7 +67,6 @@ def bluetooth_info():
         article = Article.query.get_or_404(article_id)
         device_address = article.content
     return render_template('bluetooth.html', device_address=device_address)
-
 
 @app.route('/bluetooth_data', methods=['GET'])
 @login_required
