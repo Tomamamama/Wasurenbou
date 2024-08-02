@@ -31,7 +31,19 @@
             });
 
             const result = await response.json();
-            document.getElementById('result').innerText = JSON.stringify(result, null, 2);
+            const resultDiv = document.getElementById('result');
+
+            if (Object.keys(result).length > 0) {
+                const deviceData = result[macAddress];
+                resultDiv.innerHTML = `
+                    <h2>Device Information</h2>
+                    <p><strong>MAC Address:</strong> ${macAddress}</p>
+                    <p><strong>RSSI:</strong> ${deviceData.rssi} dBm</p>
+                    <p><strong>Distance:</strong> ${deviceData.distance.toFixed(2)} meters</p>
+                `;
+            } else {
+                resultDiv.innerHTML = '<p>No device found with the specified MAC address.</p>';
+            }
         });
     </script>
 </body>
